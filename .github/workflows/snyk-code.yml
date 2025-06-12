@@ -1,3 +1,6 @@
+# Description: Automates Snyk Code static analysis scan on every push or pull_request,
+# uploading results to Github's code scanning system.
+
 name: "snyk code test"
 on: [push, pull_request]
 jobs:
