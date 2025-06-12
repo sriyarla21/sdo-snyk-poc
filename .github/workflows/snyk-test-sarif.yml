@@ -1,3 +1,5 @@
+# Description: Scans open-source dependencies for vulnerabilities using snyk test 
+
 name: "snyk test"
 on: [push, pull_request]
 jobs:
