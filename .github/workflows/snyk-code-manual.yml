@@ -1,4 +1,5 @@
 # Descripiton: Designed to run a Snyk Code Scan (static application security testing)
+# uses Snyk action that automatically installs Snyk CLI and runs the scan
 
 name: "snyk code manual test"
 on: [push, pull_request]
