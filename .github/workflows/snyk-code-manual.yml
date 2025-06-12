@@ -1,3 +1,6 @@
+# Descripiton: Workflow is a manually-triggered Github actions workflow
+# designed to run a Snyk Code Scan (static application security testing)
+
 name: "snyk code manual test"
 on: [push, pull_request]
 
