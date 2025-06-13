@@ -1,6 +1,7 @@
 # Description: Automates Snyk Code static analysis scan on every push or pull_request,
 # uploading results to Github's code scanning system.
 # Explicity install Snyk CLI and run snky code test
+# can use snyk personal account token for testing
 
 name: "snyk code test"
 on: [push, pull_request]
