@@ -6,13 +6,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: snyk/actions/setup@master
-      
-      - name: Install snyk filter
-        run:  npm install snyk-filter -g
-        
-      - name: Snyk Depencies Test - show all & fail on high/critical
-        run: |           
-          snyk test --all-projects --json | tee snyk-ouput.josn  
-          snyk-filter snyk-output.json --severity critical --fail-on-bound
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          
+      - name: Install snyk filter & snyk html
+        run:  npm install -g snyk-filter snyk-to-html 
+
+      - name: Run Snyk test and save JSON output
+        run: snyk test --all-projects --json > snyk-output.json
+        
+      - name: Fail build ifcrtical issues esist
+        run: snyk-filter snyk-output.json --severity critical --fail-on-found
+
+      - name: Generate Html report
+        run: snyk-to-html -i snyk-output.json -o snyk-report.html
+       
