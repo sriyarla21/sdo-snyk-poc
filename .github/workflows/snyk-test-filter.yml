@@ -1,0 +1,18 @@
+name: "snyk test and filter"
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: snyk/actions/setup@master
+      
+      - name: Install snyk filter
+        run:  npm install snyk-filter -g
+        
+      - name: Snyk Depencies Test - show all & fail on high/critical
+        run: |           
+          snyk test --all-projects --json | tee snyk-ouput.josn  
+          snyk-filter snyk-output.json --severity critical --fail-on-bound
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
