@@ -1,19 +1,21 @@
 name: "snyk test and filter"
 on: [push, pull_request]
+
+env:
+    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: snyk/actions/setup@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - uses: snyk/actions/setup@master       
           
       - name: Install snyk filter & snyk html
-        run:  npm install -g snyk-filter snyk-to-html 
+        run:  npm install -g snyk-filter snyk-to-html         
 
       - name: Run Snyk test and save JSON output
-        run: snyk test --all-projects --json > snyk-output.json
+        run: snyk test --all-projects --json > snyk-output.json       
         
       - name: Fail build ifcrtical issues esist
         run: snyk-filter snyk-output.json --severity critical --fail-on-found
