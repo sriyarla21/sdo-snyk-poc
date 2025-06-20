@@ -18,7 +18,7 @@ jobs:
         run: snyk test --all-projects --json > snyk-output.json || true    
         
       - name: Fail build ifcrtical issues esist
-        run: snyk-filter snyk-output.json --severity critical --fail-on-found
+        run: snyk-filter snyk-output.json --severity critical --fail-on-found --no-config
 
       - name: Generate Html report
         run: snyk-to-html -i snyk-output.json -o snyk-report.html
