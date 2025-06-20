@@ -15,7 +15,7 @@ jobs:
         run:  npm install -g snyk-filter snyk-to-html         
 
       - name: Run Snyk test and save JSON output
-        run: snyk test --all-projects --json > snyk-output.json       
+        run: snyk test --all-projects --json > snyk-output.json || true    
         
       - name: Fail build ifcrtical issues esist
         run: snyk-filter snyk-output.json --severity critical --fail-on-found
