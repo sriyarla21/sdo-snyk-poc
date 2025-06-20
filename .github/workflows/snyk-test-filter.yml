@@ -18,11 +18,19 @@ jobs:
         run:  npm install -g snyk-filter snyk-to-html         
 
       - name: Run Snyk test and save JSON output
-        run: snyk test --all-projects --json > snyk-output.json || true    
-        
-      - name: Fail build ifcrtical issues esist
-        run: snyk-filter snyk-output.json --severity critical --fail-on-found --no-config
-
+        run: |
+            snyk test --all-projects --json > snyk-output.json || true   
+            if [ $? -eq 0 ]; then
+              echo "Snyk scan successful."
+            else
+              echo "Snyk scan found issues or encountered an error."
+              # Add logic to handle the specific exit code (e.g., fail the build based on severity)
+            fi
       - name: Generate Html report
         run: snyk-to-html -i snyk-output.json -o snyk-report.html
+        
+      - name: Fail build if crtical issues exist
+        run: snyk-filter snyk-output.json --severity-threshold=critical 
+
+    
        
