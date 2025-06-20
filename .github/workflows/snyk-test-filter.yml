@@ -30,7 +30,7 @@ jobs:
         run: snyk-to-html -i snyk-output.json -o snyk-report.html
         
       - name: Fail build if crtical issues exist
-        run: snyk-filter snyk-output.json --severity-threshold=critical 
+        run: snyk-filter snyk-output.json --severity-threshold=critical --fail-on=all
 
     
        
