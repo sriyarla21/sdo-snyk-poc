@@ -38,8 +38,8 @@ jobs:
             name: snyk-html-report
             path: snyk-report.html
         
-      # - name: Fail build if crtical issues exist
-      #  run: snyk-filter snyk-output.json --severity-threshold=critical --fail-on=all
+      - name: Fail build if crtical issues exist
+        run: snyk-filter -i snyk-output.json -fcal .snyk-filter/snyk.yml
 
     
        
