@@ -1,4 +1,4 @@
-name: Snyk Code with snyk-delta (Smart Diff)
+name: Snyk Code with snyk-delta
 
 on:
   pull_request:
