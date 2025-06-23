@@ -45,7 +45,7 @@ jobs:
           
       # Use snyk-delta to detect new issues
       - name: Compare with snyk-delta
-        run: snyk-delta --base snyk-baseline.json --current snyk-current.json
+        run: snyk-delta --base snyk-baseline.json --current snyk-current.json -d
 
 
 
