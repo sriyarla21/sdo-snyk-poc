@@ -38,7 +38,7 @@ jobs:
             name: snyk-html-report
             path: snyk-report.html
         
-      - name: Fail build if crtical issues exist
+      - name: Fail build if critical issues exist
         run: snyk-filter -i snyk-output.json -f .snyk-filter/snyk.yml
 
     
