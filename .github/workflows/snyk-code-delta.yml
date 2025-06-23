@@ -17,13 +17,13 @@ jobs:
         
       # Run Snyk Code test on PR branch, save JSON
       - name: Run Snyk Code test (JSON)
-        run: snyk code test --json > snyk-current.json
+        run: snyk code test --json > snyk-current.json || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           
       # Upload SARIF for UI (optional but recommended)
       - name: Run Snyk Code test (SARIF)
-        run: snyk code test --sarif > snyk-current.sarif
+        run: snyk code test --sarif > snyk-current.sarif || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
