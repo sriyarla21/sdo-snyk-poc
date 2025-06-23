@@ -1,4 +1,4 @@
-name: Snyk Code with snyk-delta
+name: snyk code with snyk-delta
 
 on:
   pull_request:
@@ -39,7 +39,7 @@ jobs:
           git checkout origin/main
 
       - name: Run Snyk Code test on main branch
-        run: snyk code test --json > snyk-baseline.json
+        run: snyk code test --json > snyk-baseline.json || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           
