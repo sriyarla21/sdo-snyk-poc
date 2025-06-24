@@ -9,6 +9,9 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
 
+      - name: Install node.js dependencies
+        run: npm install
+
       - name: Setup Snyk
         uses: snyk/actions/setup@master
 
