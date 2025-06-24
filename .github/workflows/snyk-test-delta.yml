@@ -44,12 +44,14 @@ jobs:
       - name: Run Snyk Test on main branch
         run: snyk test --json > snyk-baseline.json || true
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}     
+
+      - name: print current json
+        run:  cat snyk-baseline.json | jq .
           
-      # Use snyk-delta to detect new issues
+      - name: print baseline json
+        run: cat snyk-current.json | jq .
+
+          # Use snyk-delta to detect new issues
       - name: Compare with snyk-delta
-        run: | 
-          ls -lh snyk-baseline.json snyk-current.json
-          cat snyk-baseline.json | jq .
-          cat snyk-current.json | jq .
-          snyk-delta --base snyk-baseline.json --head snyk-current.json -d
+        run:  snyk-delta --base snyk-baseline.json --head snyk-current.json -d
