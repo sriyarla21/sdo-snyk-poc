@@ -50,6 +50,6 @@ jobs:
       - name: Compare with snyk-delta
         run: | 
           ls -lh snyk-baseline.json snyk-current.json
-          cat sny-baseline.json | jq .
-          cat snyk-curent.json | jq .
+          cat snyk-baseline.json | jq .
+          cat snyk-current.json | jq .
           snyk-delta --base snyk-baseline.json --head snyk-current.json -d
