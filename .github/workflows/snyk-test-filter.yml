@@ -1,0 +1,45 @@
+name: "snyk test and filter"
+on: [push, pull_request]
+
+env:
+    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: snyk/actions/setup@master    
+
+      - name: Install jq explicitly
+        run: sudo apt-get update && sudo apt-get install -y jq
+          
+      - name: Install snyk filter & snyk html
+        run:  npm install -g snyk-filter snyk-to-html         
+
+      - name: Run Snyk test and save JSON output
+        run: |
+            snyk test --all-projects --json > snyk-output.json || true   
+            if [ $? -eq 0 ]; then
+              echo "Snyk scan successful."
+            else
+              echo "Snyk scan found issues or encountered an error."
+            fi
+            
+      - name: Generate Html report
+        run: snyk-to-html -i snyk-output.json -o snyk-report.html
+
+      # - name: Summary in logs
+       # run: jq '.vulnerabilities[] | {id, title, severity}' snyk-output.json
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+            name: snyk-html-report
+            path: snyk-report.html
+        
+      - name: Fail build if critical issues exist
+        run: snyk-filter -i snyk-output.json -f .snyk-filter/snyk.yml
+
+    
+       
