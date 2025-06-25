@@ -26,7 +26,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           
-      # Upload SARIF for UI (optional but recommended)
+      # Upload SARIF for UI (optional)
       - name: Run Snyk Test (SARIF)
         run: snyk test --sarif > snyk-current.sarif || true
         env:
@@ -37,7 +37,7 @@ jobs:
         with:
           sarif_file: snyk-current.sarif
           
-      # Fetch baseline (main branch) and run same scan
+      # Fetch baseline (main branch)
       - name: Fetch main branch
         run: |
           git fetch origin main --depth=1
