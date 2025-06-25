@@ -1,7 +1,9 @@
 # Descripiton: This workflow does not run snyk, it only uploads an existing SARIF file (result) to Github's security tab so can view 
 
 name: "snyk code manual test"
-on: [push, pull_request]
+on:
+    #[push, pull_request]
+    workflow_dispatch:
 
 jobs:
   build:
