@@ -1,7 +1,5 @@
 name: snyk test with snyk-delta
 
-name: snyk test with snyk-delta
-
 on:
   # pull_request:
   workflow_dispatch:
