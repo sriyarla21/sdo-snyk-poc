@@ -1,7 +1,8 @@
 name: snyk test with snyk-delta
 
 on:
-  # pull_request:
+  pull_request:
+    types: [opened, synchronize, reopened] # Recommended for PR gating
   workflow_dispatch:
 
 permissions:
@@ -9,7 +10,7 @@ permissions:
   security-events: write
   
 env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
 jobs:
   snyk-test-delta:
@@ -31,14 +32,14 @@ jobs:
         run: npm install -g snyk-delta
 
       - name: Run Snyk Test on PR branch (JSON)
-        run: snyk test --json > snyk-current.json || true        
+        run: snyk test --json --print-deps > snyk-current.json || true # Added --print-deps
 
       - name: Run Snyk Test on PR branch (SARIF)
         run: |
           snyk test --sarif > snyk-current.sarif || true
           if ! jq empty snyk-current.sarif; then
             echo "SARIF output is invalid"; cat snyk-current.sarif; exit 1
-          fi        
+          fi
 
       - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
@@ -52,16 +53,14 @@ jobs:
 
       - name: Run Snyk Test on main (baseline)
         working-directory: ./main-branch
-        run: snyk test --json > ../snyk-baseline.json || true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --json --print-deps > ../snyk-baseline.json || true # Added --print-deps
 
-      - name: Print current branch JSON
-        run: cat snyk-current.json | jq .
+      #- name: Print current branch JSON
+       # run: cat snyk-current.json | jq .
 
-      - name: Print main branch baseline JSON
-        run: cat snyk-baseline.json | jq .
+      #- name: Print main branch baseline JSON
+      #  run: cat snyk-baseline.json | jq .
 
       - name: Compare vulnerabilities using snyk-delta
+        # Remove "|| true" if you want the job to fail on new issues (snyk-delta exits with 1)
         run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
-
