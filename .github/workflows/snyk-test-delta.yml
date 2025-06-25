@@ -4,6 +4,10 @@ on:
   # pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  security-events: write
+  
 env:
     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
