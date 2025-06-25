@@ -19,15 +19,12 @@ jobs:
       - name: Install snyk filter & snyk html
         run:  npm install -g snyk-filter snyk-to-html         
 
-      - name: Run Snyk test and save JSON output
+      - name: Run Snyk test and output in json
         run: |
-            snyk test --all-projects --json > snyk-output.json || true   
-            if [ $? -eq 0 ]; then
-              echo "Snyk scan successful."
-            else
-              echo "Snyk scan found issues or encountered an error."
-            fi
-            
+          snyk test --all-projects --json > snyk-raw-output.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' snyk-raw-output.json \
+          | jq -s '{ vulnerabilities: . }' > snyk-output.json 
+          
       - name: Generate Html report
         run: snyk-to-html -i snyk-output.json -o snyk-report.html
 
