@@ -1,34 +1,41 @@
 name: snyk test with snyk-delta
 
+name: snyk test with snyk-delta
+
 on:
-  #pull_request:
+  # pull_request:
   workflow_dispatch:
 
 jobs:
   snyk-test-delta:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v3
 
-      - name: Install node.js dependencies
-        run: npm install
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          npm install
 
       - name: Setup Snyk
         uses: snyk/actions/setup@master
 
       - name: Install snyk-delta
         run: npm install -g snyk-delta
-        
-      # Run Snyk Test on PR branch, save JSON
-      - name: Run Snyk Test (JSON)
+
+      - name: Run Snyk Test on PR branch (JSON)
         run: snyk test --json > snyk-current.json || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          
-      # Upload SARIF for UI (optional)
-      - name: Run Snyk Test (SARIF)
-        run: snyk test --sarif > snyk-current.sarif || true
+
+      - name: Run Snyk Test on PR branch (SARIF)
+        run: |
+          snyk test --sarif > snyk-current.sarif || true
+          if ! jq empty snyk-current.sarif; then
+            echo "SARIF output is invalid"; cat snyk-current.sarif; exit 1
+          fi
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -36,24 +43,24 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-current.sarif
-          
-      # Fetch baseline (main branch)
-      - name: Fetch main branch
+
+      - name: Fetch main and create worktree
         run: |
-          git fetch origin main --depth=1
-          git checkout origin/main
+          git fetch origin main
+          git worktree add main-branch origin/main
 
-      - name: Run Snyk Test on main branch
-        run: snyk test --json > snyk-baseline.json || true
+      - name: Run Snyk Test on main (baseline)
+        working-directory: ./main-branch
+        run: snyk test --json > ../snyk-baseline.json || true
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}     
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: print current json
-        run:  cat snyk-baseline.json | jq .
-          
-      - name: print baseline json
+      - name: Print current branch JSON
         run: cat snyk-current.json | jq .
 
-          # Use snyk-delta to detect new issues
-      - name: Compare with snyk-delta
-        run:  snyk-delta --base snyk-baseline.json --head snyk-current.json -d
+      - name: Print main branch baseline JSON
+        run: cat snyk-baseline.json | jq .
+
+      - name: Compare vulnerabilities using snyk-delta
+        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
+
