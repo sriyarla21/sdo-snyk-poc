@@ -1,0 +1,56 @@
+name: snyk code with snyk-delta
+
+on:
+  #pull_request:
+  workflow_dispatch:
+
+jobs:
+  snyk-code-delta:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      - name: Setup Snyk
+        uses: snyk/actions/setup@master
+
+      - name: Install snyk-delta
+        run: npm install -g snyk-delta
+        
+      # Run Snyk Code test on PR branch, save JSON
+      - name: Run Snyk Code test (JSON)
+        run: snyk code test --json > snyk-current.json || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          
+      # Upload SARIF for UI (optional but recommended)
+      - name: Run Snyk Code test (SARIF)
+        run: snyk code test --sarif > snyk-current.sarif || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-current.sarif
+          
+      # Fetch baseline (main branch) and run same scan
+      - name: Fetch main branch
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main
+
+      - name: Run Snyk Code test on main branch
+        run: snyk code test --json > snyk-baseline.json || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          
+      # Use snyk-delta to detect new issues
+      - name: Compare with snyk-delta
+        run: snyk-delta --base snyk-baseline.json --head snyk-current.json -d
+
+
+
+
+
+
