@@ -68,3 +68,35 @@ jobs:
         working-directory: ./main-branch
         run: npm install
 
+      - name: Run Snyk Test on main (baseline flattened)
+        working-directory: ./main-branch
+        run: |
+          snyk test --all-projects --json > ../snyk-raw-baseline.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' ../snyk-raw-baseline.json \
+          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > ../snyk-baseline.json
+
+      - name: Upload Snyk Baseline Scan JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-baseline-scan-json
+          path: snyk-baseline.json
+          retention-days: 7
+    
+      - name: Inspect JSON before snyk-delta
+        run: |
+          echo "snyk-current.json:"
+          cat snyk-current.json | jq .
+          echo "snyk-baseline.json:"
+          cat snyk-baseline.json | jq .
+
+      # Snyk Delta Compare
+      - name: Compare vulnerabilities using snyk-delta
+        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
+
+      
+      - name: Test with dummy valid snyk-delta input
+        run: |
+          echo '{"packageManager": "npm", "vulnerabilities": [{"id":"SNYK-TEST-1","severity":"high"}]}' > snyk-baseline.json
+          echo '{"packageManager": "npm", "vulnerabilities": [{"id":"SNYK-TEST-2","severity":"medium"}]}' > snyk-current.json
+          snyk-delta --base snyk-baseline.json --head snyk-current.json -d
+
