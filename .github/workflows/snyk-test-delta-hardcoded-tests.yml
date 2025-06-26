@@ -1,4 +1,4 @@
-name: Snyk Test with Snyk-Delta Comparison - testing
+name: Snyk Test with Snyk-Delta Comparison - Testing
 
 on:
   pull_request:
@@ -29,18 +29,14 @@ jobs:
       - name: Setup Snyk CLI
         uses: snyk/actions/setup@master
 
-      # Install snyk-delta as precompiled binary
       - name: Download snyk-delta CLI binary
         run: |
           curl -L https://github.com/snyk-tech-services/snyk-delta/releases/latest/download/snyk-delta-linux -o snyk-delta
           chmod +x snyk-delta
           sudo mv snyk-delta /usr/local/bin/
 
-      - name: Run Snyk Test on PR branch (flattened for delta)
-        run: |
-          snyk test --all-projects --json > snyk-raw-current.json || true
-          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' snyk-raw-current.json \
-          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > snyk-current.json
+      - name: Run Snyk Test on PR branch (multi-project output)
+        run: snyk test --all-projects --json > snyk-current.json || true
 
       - name: Upload Snyk Current Scan JSON
         uses: actions/upload-artifact@v4
@@ -72,12 +68,9 @@ jobs:
         working-directory: ./main-branch
         run: npm install
 
-      - name: Run Snyk Test on main (baseline flattened)
+      - name: Run Snyk Test on main (baseline)
         working-directory: ./main-branch
-        run: |
-          snyk test --all-projects --json > ../snyk-raw-baseline.json || true
-          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' ../snyk-raw-baseline.json \
-          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > ../snyk-baseline.json
+        run: snyk test --all-projects --json > ../snyk-baseline.json || true
 
       - name: Upload Snyk Baseline Scan JSON
         uses: actions/upload-artifact@v4
@@ -86,13 +79,12 @@ jobs:
           path: snyk-baseline.json
           retention-days: 7
 
-      - name: Inspect JSON before snyk-delta
+      - name: Debug: Inspect JSON before snyk-delta
         run: |
-          echo "snyk-current.json:"
+          echo "✅ snyk-current.json:"
           cat snyk-current.json | jq .
-          echo "snyk-baseline.json:"
+          echo "✅ snyk-baseline.json:"
           cat snyk-baseline.json | jq .
 
-      # Use snyk-delta CLI (precompiled binary)
       - name: Compare vulnerabilities using snyk-delta
         run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
