@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
   security-events: write
-  
+
 env:
   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v3
 
-      - name: Install system dependencies (jq)
+      - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Install Node.js dependencies for PR branch
@@ -32,17 +32,22 @@ jobs:
       - name: Install snyk-delta CLI
         run: npm install -g snyk-delta
 
-      - name: Run Snyk Test on PR branch (JSON output)
-        run: snyk test --json --print-deps > snyk-current.json || true
+      # ✅ Run & flatten current (PR) Snyk test
+      - name: Run Snyk Test on PR branch (flattened for delta)
+        run: |
+          snyk test --all-projects --json > snyk-raw-current.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' snyk-raw-current.json \
+          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > snyk-current.json
 
-      - name: Upload Snyk Current Scan JSON Artifact
-        uses: actions/upload-artifact@v4 # Use the upload-artifact action
+      - name: Upload Snyk Current Scan JSON
+        uses: actions/upload-artifact@v4
         with:
-          name: snyk-current-scan-json # Name of the artifact
-          path: snyk-current.json # Path to the file to upload
-          retention-days: 7 # How long to keep the artifact (optional, default is 90 days)
+          name: snyk-current-scan-json
+          path: snyk-current.json
+          retention-days: 7
 
-      - name: Run Snyk Test on PR branch (SARIF output for Code Scanning)
+      # ✅ SARIF upload (optional but useful)
+      - name: Run Snyk Test (SARIF for Code Scanning)
         run: |
           snyk test --sarif > snyk-current.sarif || true
           if ! jq empty snyk-current.sarif; then
@@ -56,26 +61,30 @@ jobs:
         with:
           sarif_file: snyk-current.sarif
 
-      - name: Fetch main branch and create worktree
+      # ✅ Baseline setup
+      - name: Fetch main and create worktree
         run: |
           git fetch origin main
           git worktree add main-branch origin/main
 
-      - name: Install Node.js dependencies for main branch (baseline)
+      - name: Install Node.js dependencies for main
         working-directory: ./main-branch
         run: npm install
 
-      - name: Run Snyk Test on main (baseline)
+      - name: Run Snyk Test on main (baseline flattened)
         working-directory: ./main-branch
-        run: snyk test --json --print-deps > ../snyk-baseline.json || true
+        run: |
+          snyk test --all-projects --json > ../snyk-raw-baseline.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' ../snyk-raw-baseline.json \
+          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > ../snyk-baseline.json
 
-      - name: Upload Snyk Baseline Scan JSON Artifact
-        uses: actions/upload-artifact@v4 # Use the upload-artifact action
+      - name: Upload Snyk Baseline Scan JSON
+        uses: actions/upload-artifact@v4
         with:
-          name: snyk-baseline-scan-json # Name of the artifact
-          path: snyk-baseline.json # Path to the file to upload
-          retention-days: 7 # How long to keep the artifact (optional, default is 90 days)
+          name: snyk-baseline-scan-json
+          path: snyk-baseline.json
+          retention-days: 7
 
+      # ✅ Delta comparison
       - name: Compare vulnerabilities using snyk-delta
         run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
-        # REMOVE "|| true" if you want the job to fail on new issues (snyk-delta exits with 1)
