@@ -36,7 +36,7 @@ jobs:
         run: snyk test --json --print-deps > snyk-current.json || true
 
       - name: Upload Snyk Current Scan JSON Artifact
-        uses: actions/upload-artifact@v3 # Use the upload-artifact action
+        uses: actions/upload-artifact@v4 # Use the upload-artifact action
         with:
           name: snyk-current-scan-json # Name of the artifact
           path: snyk-current.json # Path to the file to upload
@@ -70,7 +70,7 @@ jobs:
         run: snyk test --json --print-deps > ../snyk-baseline.json || true
 
       - name: Upload Snyk Baseline Scan JSON Artifact
-        uses: actions/upload-artifact@v3 # Use the upload-artifact action
+        uses: actions/upload-artifact@v4 # Use the upload-artifact action
         with:
           name: snyk-baseline-scan-json # Name of the artifact
           path: snyk-baseline.json # Path to the file to upload
