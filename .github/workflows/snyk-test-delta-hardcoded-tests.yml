@@ -30,7 +30,7 @@ jobs:
         uses: snyk/actions/setup@master
 
       - name: Install snyk-delta CLI
-        run: npm install -g snyk-delta@0.4.0
+        run: npm install -g github:snyk-tech-services/snyk-delta
 
       - name: Run Snyk Test on PR branch (flattened for delta)
         run: |
