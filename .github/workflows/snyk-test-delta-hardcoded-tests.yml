@@ -1,4 +1,4 @@
-name: Snyk Test with Snyk-Delta Comparison
+name: Snyk Test with Snyk-Delta Comparison - testing
 
 on:
   pull_request:
