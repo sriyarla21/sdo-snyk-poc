@@ -79,11 +79,11 @@ jobs:
           path: snyk-baseline.json
           retention-days: 7
 
-      - name: Debug: Inspect JSON before snyk-delta
+      - name: Inspect JSON before snyk-delta
         run: |
-          echo "✅ snyk-current.json:"
+          echo "snyk-current.json:"
           cat snyk-current.json | jq .
-          echo "✅ snyk-baseline.json:"
+          echo "snyk-baseline.json:"
           cat snyk-baseline.json | jq .
 
       - name: Compare vulnerabilities using snyk-delta
