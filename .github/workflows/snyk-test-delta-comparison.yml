@@ -39,10 +39,10 @@ jobs:
         # || true ensures the step doesn't fail if Snyk finds vulnerabilities, allowing snyk-delta to run
         run: snyk test --json --print-deps > snyk-current.json || true
 
-      - name: Debug: Print raw snyk-current.json
+      - name: Print raw snyk-current.json
         run: cat snyk-current.json # Output the raw JSON for debugging purposes
 
-      - name: Debug: Pretty Print snyk-current.json
+      - name: Pretty Print snyk-current.json
         run: cat snyk-current.json | jq . # Pretty-print JSON for readability in logs
 
       - name: Run Snyk Test on PR branch (SARIF output for Code Scanning)
@@ -76,10 +76,10 @@ jobs:
         # Output to a file outside the worktree to be accessible by snyk-delta
         run: snyk test --json --print-deps > ../snyk-baseline.json || true
 
-      - name: Debug: Print raw snyk-baseline.json
+      - name: Print raw snyk-baseline.json
         run: cat snyk-baseline.json # Output the raw JSON for debugging purposes
 
-      - name: Debug: Pretty Print snyk-baseline.json
+      - name: Pretty Print snyk-baseline.json
         run: cat snyk-baseline.json | jq . # Pretty-print JSON for readability in logs
 
       - name: Compare vulnerabilities using snyk-delta
