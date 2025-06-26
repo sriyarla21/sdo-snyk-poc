@@ -79,12 +79,20 @@ jobs:
           path: snyk-baseline.json
           retention-days: 7
 
+      # ✅ Download both JSONs for local inspection (optional)
+      - name: Download JSON artifacts for debug
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      # ✅ Debug view before snyk-delta
       - name: Inspect JSON before snyk-delta
         run: |
-          echo "snyk-current.json:"
-          cat snyk-current.json | jq .
-          echo "snyk-baseline.json:"
-          cat snyk-baseline.json | jq .
+          echo "✅ snyk-current.json:"
+          cat ./artifacts/snyk-current-scan-json/snyk-current.json | jq .
+          echo "✅ snyk-baseline.json:"
+          cat ./artifacts/snyk-baseline-scan-json/snyk-baseline.json | jq .
 
+      # ✅ Run snyk-delta comparison
       - name: Compare vulnerabilities using snyk-delta
-        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
+        run: snyk-delta --base ./artifacts/snyk-baseline-scan-json/snyk-baseline.json --head ./artifacts/snyk-current-scan-json/snyk-current.json --setPassIfNoBaseline true -d
