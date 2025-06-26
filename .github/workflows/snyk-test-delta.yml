@@ -1,8 +1,8 @@
 name: snyk test with snyk-delta
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened] # Recommended for PR gating
+  #pull_request:
+    #types: [opened, synchronize, reopened] # Recommended for PR gating
   workflow_dispatch:
 
 permissions:
