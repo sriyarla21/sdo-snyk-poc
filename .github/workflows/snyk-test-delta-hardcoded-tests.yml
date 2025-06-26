@@ -112,5 +112,5 @@ jobs:
       # Run snyk-delta comparison
       - name: Compare vulnerabilities using snyk-delta
         # Ensure paths correctly point to the downloaded artifact files
-        run: ./snyk-delta --base ./artifacts/snyk-baseline-scan-json/snyk-baseline.json --head ./artifacts/snyk-current-scan-json/snyk-current.json --setPassIfNoBaseline true -d
+        run: snyk-delta --base ./artifacts/snyk-baseline-scan-json/snyk-baseline.json --head ./artifacts/snyk-current-scan-json/snyk-current.json --setPassIfNoBaseline true -d
         # REMOVE "|| true" if you want the job to fail on new issues (snyk-delta exits with 1)
