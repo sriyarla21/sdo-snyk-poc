@@ -1,4 +1,4 @@
-name: Snyk Test with Snyk-Delta - hard coded tests
+name: Snyk Test with Snyk-Delta Comparison
 
 on:
   pull_request:
@@ -29,8 +29,12 @@ jobs:
       - name: Setup Snyk CLI
         uses: snyk/actions/setup@master
 
-      - name: Install snyk-delta CLI
-        run: npm install -g github:snyk-tech-services/snyk-delta
+      # Install snyk-delta as precompiled binary
+      - name: Download snyk-delta CLI binary
+        run: |
+          curl -L https://github.com/snyk-tech-services/snyk-delta/releases/latest/download/snyk-delta-linux -o snyk-delta
+          chmod +x snyk-delta
+          sudo mv snyk-delta /usr/local/bin/
 
       - name: Run Snyk Test on PR branch (flattened for delta)
         run: |
@@ -81,7 +85,7 @@ jobs:
           name: snyk-baseline-scan-json
           path: snyk-baseline.json
           retention-days: 7
-    
+
       - name: Inspect JSON before snyk-delta
         run: |
           echo "snyk-current.json:"
@@ -89,14 +93,6 @@ jobs:
           echo "snyk-baseline.json:"
           cat snyk-baseline.json | jq .
 
-      # Snyk Delta Compare
-      #- name: Compare vulnerabilities using snyk-delta
-      #  run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
-
-      
-      - name: Test with dummy valid snyk-delta input
-        run: |
-          echo '{"packageManager": "npm", "vulnerabilities": [{"id":"SNYK-TEST-1","severity":"high"}]}' > snyk-baseline.json
-          echo '{"packageManager": "npm", "vulnerabilities": [{"id":"SNYK-TEST-2","severity":"medium"}]}' > snyk-current.json
-          snyk-delta --base snyk-baseline.json --head snyk-current.json -d
-
+      # Use snyk-delta CLI (precompiled binary)
+      - name: Compare vulnerabilities using snyk-delta
+        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
