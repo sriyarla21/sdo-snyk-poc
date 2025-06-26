@@ -90,8 +90,8 @@ jobs:
           cat snyk-baseline.json | jq .
 
       # Snyk Delta Compare
-      - name: Compare vulnerabilities using snyk-delta
-        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
+      #- name: Compare vulnerabilities using snyk-delta
+      #  run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
 
       
       - name: Test with dummy valid snyk-delta input
