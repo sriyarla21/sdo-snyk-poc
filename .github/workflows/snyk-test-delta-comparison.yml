@@ -2,53 +2,49 @@ name: Snyk Test with Snyk-Delta Comparison
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened] # Trigger on PR creation, updates, and reopens
-  workflow_dispatch: # Allows manual triggering from the GitHub UI
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
-  contents: read # Required to checkout the repository code
-  security-events: write # Required to upload SARIF results to GitHub Code Scanning
+  contents: read
+  security-events: write
   
 env:
-  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # Snyk token for authentication
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
 jobs:
   snyk-test-delta:
-    runs-on: ubuntu-latest # Run the job on an Ubuntu virtual machine
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v3 # Checks out the code of the current PR branch
+        uses: actions/checkout@v3
 
       - name: Install system dependencies (jq)
-        run: sudo apt-get update && sudo apt-get install -y jq # jq is used for SARIF validation and pretty-printing JSON
+        run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Install Node.js dependencies for PR branch
-        run: npm install # Install project dependencies for the PR branch, ensuring lockfiles are present
-        # Consider adding 'npm ci' instead of 'npm install' for CI if you use a lockfile
-        # if your project isn't Node.js, replace this with your language's dependency install command (e.g., pip install -r requirements.txt)
+        run: npm install
 
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@master # Installs and configures the Snyk CLI
+        uses: snyk/actions/setup@master
 
       - name: Install snyk-delta CLI
-        run: npm install -g snyk-delta # Installs the snyk-delta tool globally
+        run: npm install -g snyk-delta
 
       - name: Run Snyk Test on PR branch (JSON output)
-        # --print-deps is crucial for snyk-delta to get the full dependency graph
-        # || true ensures the step doesn't fail if Snyk finds vulnerabilities, allowing snyk-delta to run
         run: snyk test --json --print-deps > snyk-current.json || true
 
-      - name: Print raw snyk-current.json
-        run: cat snyk-current.json # Output the raw JSON for debugging purposes
-
-      - name: Pretty Print snyk-current.json
-        run: cat snyk-current.json | jq . # Pretty-print JSON for readability in logs
+      - name: Upload Snyk Current Scan JSON Artifact
+        uses: actions/upload-artifact@v3 # Use the upload-artifact action
+        with:
+          name: snyk-current-scan-json # Name of the artifact
+          path: snyk-current.json # Path to the file to upload
+          retention-days: 7 # How long to keep the artifact (optional, default is 90 days)
 
       - name: Run Snyk Test on PR branch (SARIF output for Code Scanning)
         run: |
           snyk test --sarif > snyk-current.sarif || true
-          # Validate SARIF output using jq to catch empty/invalid files
           if ! jq empty snyk-current.sarif; then
             echo "SARIF output is invalid or empty. Content:"
             cat snyk-current.sarif
@@ -56,35 +52,30 @@ jobs:
           fi
 
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3 # Uploads the SARIF file to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-current.sarif
 
       - name: Fetch main branch and create worktree
-        # Create a temporary worktree for the main branch to run Snyk Test on its state
         run: |
-          git fetch origin main # Fetch the main branch
-          git worktree add main-branch origin/main # Create a worktree named 'main-branch'
+          git fetch origin main
+          git worktree add main-branch origin/main
 
       - name: Install Node.js dependencies for main branch (baseline)
-        working-directory: ./main-branch # Run command within the main-branch worktree
-        run: npm install # Install dependencies for the baseline to ensure lockfiles are present
-        # Replace with your language's dependency install command if not Node.js
+        working-directory: ./main-branch
+        run: npm install
 
       - name: Run Snyk Test on main (baseline)
-        working-directory: ./main-branch # Run Snyk Test in the context of the main-branch worktree
-        # Output to a file outside the worktree to be accessible by snyk-delta
+        working-directory: ./main-branch
         run: snyk test --json --print-deps > ../snyk-baseline.json || true
 
-      - name: Print raw snyk-baseline.json
-        run: cat snyk-baseline.json # Output the raw JSON for debugging purposes
-
-      - name: Pretty Print snyk-baseline.json
-        run: cat snyk-baseline.json | jq . # Pretty-print JSON for readability in logs
+      - name: Upload Snyk Baseline Scan JSON Artifact
+        uses: actions/upload-artifact@v3 # Use the upload-artifact action
+        with:
+          name: snyk-baseline-scan-json # Name of the artifact
+          path: snyk-baseline.json # Path to the file to upload
+          retention-days: 7 # How long to keep the artifact (optional, default is 90 days)
 
       - name: Compare vulnerabilities using snyk-delta
-        # --base and --head specify the baseline and current JSON files
-        # --setPassIfNoBaseline true prevents snyk-delta from failing if the baseline file is empty/invalid
-        # -d enables debug output for snyk-delta itself, useful for troubleshooting its comparison logic
-        # REMOVE "|| true" if you want the job to fail when snyk-delta finds new issues (snyk-delta exits with 1 in this case)
         run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
+        # REMOVE "|| true" if you want the job to fail on new issues (snyk-delta exits with 1)
