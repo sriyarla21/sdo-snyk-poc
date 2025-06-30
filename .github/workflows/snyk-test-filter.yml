@@ -1,44 +1,69 @@
 name: "snyk test and filter"
-on: 
-    #[push, pull_request]
-    workflow_dispatch:
 
+# Trigger configuration:
+# The workflow is currently manually triggered using GitHub Actions UI.
+# Uncomment the below lines to run this on push and pull request events.
+# on:
+#   push:
+#   pull_request:
+
+on: 
+  workflow_dispatch:
+
+# Define global environment variables available to all steps.
 env:
-    SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          
+  # Snyk token pulled securely from GitHub secrets for authentication.
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
 jobs:
   build:
+    # The workflow runs on the latest Ubuntu runner provided by GitHub.
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Check out the code from the repository.
       - uses: actions/checkout@v3
+
+      # Step 2: Set up Snyk CLI using the official GitHub Action.
       - uses: snyk/actions/setup@master    
 
+      # Step 3: Install 'jq', a lightweight JSON processor, to parse and filter the Snyk JSON output.
       - name: Install jq explicitly
         run: sudo apt-get update && sudo apt-get install -y jq
           
+      # Step 4: Install 'snyk-filter' and 'snyk-to-html' globally via npm.
+      # - snyk-filter: filters vulnerabilities based on rules defined in `.snyk-filter/snyk.yml`
+      # - snyk-to-html: converts Snyk JSON output into a readable HTML report
       - name: Install snyk filter & snyk html
         run:  npm install -g snyk-filter snyk-to-html         
 
+      # Step 5: Run Snyk test on all projects (monorepo support)
+      # - Generates raw JSON output (may include multiple project scans)
+      # - Use `jq` to extract all individual vulnerabilities across all projects
       - name: Run Snyk test and output in json
         run: |
           snyk test --all-projects --json > snyk-raw-output.json || true
           jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' snyk-raw-output.json \
           | jq -s '{ vulnerabilities: . }' > snyk-output.json 
-          
+
+      # Step 6: Convert the filtered JSON into an HTML report
+      # - Useful for sharing or uploading to CI artifacts
       - name: Generate Html report
         run: snyk-to-html -i snyk-output.json -o snyk-report.html
 
+      # Optional step: Uncomment to print summary of issues directly in GitHub Actions logs.
+      # Shows ID, title, and severity of each vulnerability.
       # - name: Summary in logs
-       # run: jq '.vulnerabilities[] | {id, title, severity}' snyk-output.json
+      #   run: jq '.vulnerabilities[] | {id, title, severity}' snyk-output.json
 
+      # Step 7: Upload HTML report as a downloadable artifact in GitHub Actions UI.
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
         with:
-            name: snyk-html-report
-            path: snyk-report.html
+          name: snyk-html-report
+          path: snyk-report.html
         
+      # Step 8: Fail the build if critical issues are found
+      # - Controlled by rules defined in .snyk-filter/snyk.yml
       - name: Fail build if critical issues exist
         run: snyk-filter -i snyk-output.json -f .snyk-filter/snyk.yml
-
-    
-       
