@@ -1,0 +1,90 @@
+name: Snyk Test with Snyk-Delta Comparison
+
+on:
+  #pull_request:
+   # types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+jobs:
+  snyk-test-delta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install Node.js dependencies for PR branch
+        run: npm install
+
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Install snyk-delta CLI
+        run: npm install -g snyk-delta
+
+      # ✅ Run & flatten current (PR) Snyk test
+      - name: Run Snyk Test on PR branch (flattened for delta)
+        run: |
+          snyk test --all-projects --json > snyk-raw-current.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' snyk-raw-current.json \
+          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > snyk-current.json
+
+      - name: Upload Snyk Current Scan JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-current-scan-json
+          path: snyk-current.json
+          retention-days: 7
+
+      # ✅ SARIF upload (optional but useful)
+      - name: Run Snyk Test (SARIF for Code Scanning)
+        run: |
+          snyk test --sarif > snyk-current.sarif || true
+          if ! jq empty snyk-current.sarif; then
+            echo "SARIF output is invalid or empty. Content:"
+            cat snyk-current.sarif
+            exit 1
+          fi
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-current.sarif
+
+      # ✅ Baseline setup
+      - name: Fetch main and create worktree
+        run: |
+          git fetch origin main
+          git worktree add main-branch origin/main
+
+      - name: Install Node.js dependencies for main
+        working-directory: ./main-branch
+        run: npm install
+
+      - name: Run Snyk Test on main (baseline flattened)
+        working-directory: ./main-branch
+        run: |
+          snyk test --all-projects --json > ../snyk-raw-baseline.json || true
+          jq '[.[] | select(.vulnerabilities) | .vulnerabilities[]]' ../snyk-raw-baseline.json \
+          | jq -s '{ packageManager: "npm", vulnerabilities: . }' > ../snyk-baseline.json
+
+      - name: Upload Snyk Baseline Scan JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-baseline-scan-json
+          path: snyk-baseline.json
+          retention-days: 7
+
+      # ✅ Delta comparison
+      - name: Compare vulnerabilities using snyk-delta
+        run: snyk-delta --base snyk-baseline.json --head snyk-current.json --setPassIfNoBaseline true -d
