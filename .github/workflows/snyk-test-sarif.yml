@@ -1,22 +1,27 @@
-# Description: Scans open-source dependencies for vulnerabilities using snyk test 
-
 name: "snyk test"
+
+# Trigger section: Defines when the workflow should run
+# Uncomment the following lines to automatically run the workflow on code pushes or pull requests
+# on:
+#   push:
+#   pull_request:
+
+# Currently set to manual trigger only through the GitHub Actions UI
 on: 
-    #[push, pull_request]
-    workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
+    # This job will run on the latest available Ubuntu runner provided by GitHub
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Checkout the source code from the repository
       - uses: actions/checkout@v3
+
+      # Step 2: Set up the Snyk CLI using the official GitHub Action
+      # This is necessary to run Snyk commands in the next step
       - uses: snyk/actions/setup@master
-      - name: Snyk Test
-        run: snyk test --sarif-file-output=snyk-sarif1.json
-        continue-on-error: true
-        env:
-           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: snyk-sarif1.json
+
+      # Step 3: Run the Snyk test to check for vulnerabilities in the code and dependencies
+      # The results are output in SARIF format, which is compatible with GitHub
