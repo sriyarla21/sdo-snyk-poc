@@ -1,27 +1,36 @@
 name: "snyk test"
 
-# Trigger section: Defines when the workflow should run
-# Uncomment the following lines to automatically run the workflow on code pushes or pull requests
-# on:
-#   push:
-#   pull_request:
-
-# Currently set to manual trigger only through the GitHub Actions UI
+# Trigger: This workflow can be triggered manually from the GitHub Actions UI.
+# Other options like push/pull_request are commented out for now.
 on: 
   workflow_dispatch:
 
 jobs:
   build:
-    # This job will run on the latest available Ubuntu runner provided by GitHub
+    # Environment: Run the workflow on the latest Ubuntu runner.
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the source code from the repository
+      # Step 1: Checkout the code from the repository so the workflow can analyze it.
       - uses: actions/checkout@v3
 
-      # Step 2: Set up the Snyk CLI using the official GitHub Action
-      # This is necessary to run Snyk commands in the next step
+      # Step 2: Set up Snyk CLI using the official Snyk GitHub Action.
+      # This installs the required tools to run the security scan.
       - uses: snyk/actions/setup@master
 
-      # Step 3: Run the Snyk test to check for vulnerabilities in the code and dependencies
-      # The results are output in SARIF format, which is compatible with GitHub
+      # Step 3: Run a Snyk security test on the project.
+      # Generates a SARIF (Static Analysis Results Interchange Format) output file.
+      # 'continue-on-error' is set to true so the workflow doesn't fail even if vulnerabilities are found.
+      - name: Snyk Test
+        run: snyk test --sarif-file-output=snyk-sarif1.json
+        continue-on-error: true
+        env:
+          # SNYK_TOKEN is securely pulled from GitHub Secrets to authenticate the Snyk CLI.
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Step 4: Upload the generated SARIF file to GitHub's Security tab.
+      # This allows vulnerabilities to be viewed directly in the GitHub UI under Code Scanning Alerts.
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-sarif1.json
